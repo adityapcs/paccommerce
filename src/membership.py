@@ -1,64 +1,69 @@
-from tabulate import tabulate
+import math
 from src.database import add_user, get_user
+from tabulate import tabulate
+
 
 class Membership:
 
-    _BENEFIT_DATA = [
-        ["Silver", "8%", "Voucher Makanan"],
-        ["Gold", "10%", "Benefit Silver + Voucher Ojek Online"],
-        ["Platinum", "15%", "Benefit Gold + Voucher Liburan"]
-    ]
-
-    _REQUIREMENT_DATA = [
-        ["Silver", "5 Juta", "7 Juta"],
-        ["Gold", "6 Juta", "10 Juta"],
-        ["Platinum", "8 Juta", "15 Juta"]
-    ]
-
-    _DISCOUNT = {
-        "Silver": 0.08,
-        "Gold": 0.10,
-        "Platinum": 0.15
+    BENEFITS = {
+        "Platinum": {"discount": 0.15},
+        "Gold": {"discount": 0.10},
+        "Silver": {"discount": 0.08}
     }
 
-    _TIER_PARAMS = {
-        "Silver": {"monthly_spending": 5000000, "monthly_income": 7000000},
-        "Gold": {"monthly_spending": 6000000, "monthly_income": 10000000},
-        "Platinum": {"monthly_spending": 8000000, "monthly_income": 15000000}
+    REQUIREMENTS = {
+        "Platinum": (8, 15),
+        "Gold": (6, 10),
+        "Silver": (5, 7)
     }
 
     def __init__(self, username):
         self.username = username
 
-    def show_benefits(self):
-        benefits = tabulate(self._BENEFIT_DATA, headers = ["Tier", "Discount", "Another Benefit"])
-        print(benefits)
+    def show_benefit(self):
+        table = []
+        for tier, data in self.BENEFITS.items():
+            table.append([tier, f"{data['discount']*100}%"])
+        print(tabulate(table, headers=["Tier", "Discount"]))
+
     def show_requirements(self):
-        pass
-    def add_new_user(self, username, tier):
-        add_user(username, tier)
-        print(f"User {username} berhasil ditambahkan dengan tier {tier}")
-    def show_membership(self):
-        pass
-    def predit_tier(self, monthly_spending, monthly_income):
-        # \(d = \sqrt{(x_2 - x_1)^2 + (y_2 - y_1)^2})
+        table = []
+        for tier, req in self.REQUIREMENTS.items():
+            table.append([tier, req[0], req[1]])
+        print(tabulate(table, headers=["Tier", "Expense", "Income"]))
+
+    def add_new_user(self, username, tier, overwrite=False):
+        if tier not in self.BENEFITS:
+            raise ValueError("Invalid tier")
+        add_user(username, tier, overwrite=overwrite)
+
+    def predict_membership(self, expense, income):
         distances = {}
 
-        for tier, params in self._TIER_PARAMS.items():
-            monthly_spending_param = params['monthly_spending']
-            monthly_income_param = params['monthly_income']
+        for tier, (exp, inc) in self.REQUIREMENTS.items():
+            d = math.sqrt((expense - exp)**2 + (income - inc)**2)
+            distances[tier] = d
 
-            distance = ((monthly_spending - monthly_spending_param)**2+(monthly_income - monthly_income_param)**2)**0.5
-            distances[tier] = distance
-        predicted_tier = min(distances, key=distances.get)
-        print(f"Predicted Tier: {predicted_tier}")
-        return predicted_tier
-    def calculate_price(self, username, list_harga):
+        result = min(distances, key=distances.get)
+
+        # simpan ke JSON
+        add_user(self.username, result, overwrite=True)
+
+        return result
+
+    def show_membership(self, username):
+        return get_user(username)
+
+    def calculate_price(self, username, prices):
+        if not isinstance(prices, list):
+            raise TypeError("prices must be list")
+
         tier = get_user(username)
+
         if tier is None:
-            print(f"User {username} tidak ditemukan")
-            return None
-        discount = self._DISCOUNT.get(tier, 0)
-        total_price = sum(list_harga)
-        discounted_price = total_price * (1-discount)
-        print(f"{username} dengan tier {tier} mendapatkan diskon {discount*100}% Total harga setelah diskon: {discounted_price}")
+            raise ValueError("User not found")
+
+        discount = self.BENEFITS[tier]["discount"]
+        total = sum(prices)
+
+        return total * (1 - discount)
