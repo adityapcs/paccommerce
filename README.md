@@ -1,7 +1,6 @@
 # PacCommerce: Customer Membership System
 
 [![Python Version](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
 PacCommerce adalah sistem manajemen dan prediksi tingkatan (*tier*) membership pelanggan berbasis e-commerce. Sistem ini menggunakan pendekatan **Machine Learning sederhana (K-Nearest Neighbors konsep dasar)** dengan menghitung **Euclidean Distance** untuk mengkategorikan pelanggan ke dalam tiga tingkatan: *Silver*, *Gold*, atau *Platinum* berdasarkan profil keuangan bulanan mereka.
 
